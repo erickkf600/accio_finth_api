@@ -35,7 +35,6 @@ export default class BuyCrudsController {
   private async registerInstalments(body: any, fId: number[], munths: any[]) {
     const instalments: any[] = []
     const payment: any[] = []
-    let months: any[] = []
     await body.forEach(async (el: any, i: number) => {
       let date = moment().month(el.mounth_ref - 1).year(el.year);
       payment.push({
