@@ -6,6 +6,7 @@ import Payment from 'App/Models/Payment'
 import moment from 'moment'
 
 export default class BuyCrudsController {
+
     public async register(ctx: HttpContextContract) {
         const body: any = ctx.request.body()
         const buys: any = []
@@ -35,8 +36,9 @@ export default class BuyCrudsController {
   private async registerInstalments(body: any, fId: number[], munths: any[]) {
     const instalments: any[] = []
     const payment: any[] = []
+
     await body.forEach(async (el: any, i: number) => {
-      let date = moment().month(el.mounth_ref - 1).year(el.year);
+      let date = moment().month(el.mounth_ref -1).year(el.year);
       payment.push({
         payed_value: 0,
         buy_id: fId[i],
@@ -48,7 +50,7 @@ export default class BuyCrudsController {
         date.add(ii ,'month');
         instalments.push({
           mounth_ref: munths.find(m => m.num === +date.format("MM"))?.id,
-          year: +date.format("YYYY"),
+          year: +moment().format("MM") === 1 ? (+date.format("YYYY") + 1) : +date.format("YYYY"),
           instalment_num: ii+1,
           total_instalments: [...Array(el.instalments).keys()].length,
           instalment_value: el.value / [...Array(el.instalments).keys()].length,

@@ -41,12 +41,13 @@ export default class PurchasesController {
 
     const buy: any = await Buy.query()
     .select('id', 'buy_name', 'card_id')
+    .where('user_id', user)
     .whereHas('instalments', (instalmentsQuery) => {
       instalmentsQuery.where('year', year)
       instalmentsQuery.andWhere('mounth_ref', monthId)
     }, '>', 0)
     .preload('instalments', (instalmentsQuery) =>{
-      instalmentsQuery.select('id', 'instalment_num', 'total_instalments', 'instalment_value',)
+      instalmentsQuery.select('id', 'instalment_num', 'total_instalments', 'instalment_value')
       instalmentsQuery.where('mounth_ref', monthId)
       instalmentsQuery.andWhere('user_id', user)
       instalmentsQuery.andWhere('year', year)
@@ -55,7 +56,6 @@ export default class PurchasesController {
       cardQuery.select('id', 'inicial_num', 'name', 'type', 'flag')
     })
 
-
     buy.map(el => {
       instalment.push({
         id: el.id,
@@ -63,10 +63,8 @@ export default class PurchasesController {
         instalment_num: el.instalments[0].instalment_num,
         total_instalments: el.instalments[0].total_instalments,
         instalment_value: el.instalments[0].instalment_value,
-        card: {
-          id: el.card_id,
-          name: el.card.name,
-        }
+        card_id: el.card_id,
+        card_name: el.card.name,
 
       })
     })
@@ -85,7 +83,7 @@ export default class PurchasesController {
       instalmentsQuery.andWhere('mounth_ref', monthId)
     }, '>', 0)
     .preload('user', (userQuery) =>{
-      userQuery.select('name')
+      userQuery.select('id', 'name')
     })
 
     const installment = await Instalment.query()
@@ -96,13 +94,13 @@ export default class PurchasesController {
     .andWhere('mounth_ref', monthId)
     .andWhere('year', year)
 
-
     const payment = await Payment.query()
     .select('payed_value', 'user_id')
     .groupBy('user_id')
     .select(Database.raw('round(sum(payed_value), 2) as payed_value'))
     .whereIn('user_id', buy.map(el => (el.user_id)))
     .andWhere('mounth_ref', monthId)
+
 
     const final = buy.map((el, i) => (
       Object.assign(el, {
@@ -113,6 +111,22 @@ export default class PurchasesController {
     return final
   }
 
+  public async updatePurchase(ctx: HttpContextContract) {
+    const id: number = ctx.params.id;
+    const body: any = ctx.request.body()
+
+    const buy: any = await Buy.findOrFail(id)
+    const installment: any = await Instalment.query()
+    .where('buy_id', id)
+    .andWhere('instalment_num', body.purchase_instalment)
+
+    installment.instalment_value = +body.purchase_value
+    installment.instalment_num = +body.purchase_instalment
+    buy.buy_name = body.purch_name
+    buy.card_id = +body.card
+
+    return installment
+  }
 
   public async deleteDebiter(ctx: HttpContextContract) {
     const id: number = ctx.params.id;
